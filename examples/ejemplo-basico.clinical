@@ -7,19 +7,19 @@
   "variables": [
     {
       "name": "edad",
-      "type": "Cuantitativa Continua",
-      "description": "Edad del paciente en años",
+      "type": "Cuantitativa Discreta",
+      "description": "Edad cronológica del paciente en años cumplidos.",
       "metadata": {
         "question": "¿Cuál es la edad del paciente en años?",
         "unit": "años",
-        "range": { "min": 0, "max": 18 },
+        "range": { "min": "0", "max": "18" },
         "categories": []
       }
     },
     {
       "name": "sexo",
       "type": "Nominal Dicotómica",
-      "description": "Sexo biológico del paciente",
+      "description": "Sexo biológico del paciente.",
       "metadata": {
         "question": "¿Cuál es el sexo biológico?",
         "unit": "",
@@ -33,29 +33,29 @@
     {
       "name": "altura",
       "type": "Cuantitativa Continua",
-      "description": "Altura del paciente en centímetros",
+      "description": "Altura del paciente en centímetros.",
       "metadata": {
         "question": "¿Cuál es la altura del paciente en cm?",
         "unit": "cm",
-        "range": { "min": 50, "max": 180 },
+        "range": { "min": "50", "max": "180" },
         "categories": []
       }
     },
     {
       "name": "peso",
       "type": "Cuantitativa Continua",
-      "description": "Peso del paciente en kilogramos",
+      "description": "Peso del paciente en kilogramos.",
       "metadata": {
         "question": "¿Cuál es el peso del paciente en kg?",
         "unit": "kg",
-        "range": { "min": 2, "max": 50 },
+        "range": { "min": "2", "max": "50" },
         "categories": []
       }
     },
     {
       "name": "categoria_bmi",
       "type": "Nominal Policotómica",
-      "description": "Categoría de Índice de Masa Corporal",
+      "description": "Categoría de Índice de Masa Corporal según percentiles.",
       "metadata": {
         "question": "¿En qué categoría de BMI se encuentra el paciente?",
         "unit": "",
@@ -65,6 +65,21 @@
           { "label": "Peso normal", "synonyms": ["normal"] },
           { "label": "Sobrepeso", "synonyms": ["sobre"] },
           { "label": "Obesidad", "synonyms": ["obesidad"] }
+        ]
+      }
+    },
+    {
+      "name": "nivel_severidad",
+      "type": "Ordinal",
+      "description": "Nivel de severidad clínica observado.",
+      "metadata": {
+        "question": "¿Cuál es el nivel de severidad?",
+        "unit": "",
+        "range": { "min": "", "max": "" },
+        "categories": [
+          { "label": "Leve", "synonyms": ["1", "leve"] },
+          { "label": "Moderado", "synonyms": ["2", "moderado"] },
+          { "label": "Severo", "synonyms": ["3", "severo"] }
         ]
       }
     }

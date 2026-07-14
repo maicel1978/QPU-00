@@ -1,78 +1,109 @@
-# CLINICAL CONTRACTS — Especificación del Formato `.clinical`
+# CLINICAL-CONTRACTS.md — Contrato del Formato `.clinical`
 
-Cualquier utilidad del ecosistema QPU debe ser capaz de parsear y respetar estrictamente el formato `.clinical` de entrada.
+> **Este archivo documenta el contrato que todas las QPUs deben respetar al leer un archivo `.clinical`.** La fuente canónica del formato vive en el repo [`oper`](https://github.com/maicel1978/oper). Este archivo es la "vista QPU" de ese contrato: lo que necesitamos saber para implementar las QPUs.
 
-## 1. Esquema JSON de Validación (`.clinical`)
+## 1. Decisión crítica de compatibilidad
 
-El archivo `.clinical` es un JSON estructurado que define la operacionalización del protocolo clínico. 
+**La estructura raíz del `.clinical` es intocable:**
 
-Ejemplo de parseo basado en `operacionalizacion (3).clinical`:
+```json
+{
+  "project": {},
+  "variables": []
+}
+```
+
+Esto es una decisión del repo `oper` para no romper compatibilidad con aplicaciones que ya consumen el formato. **Ninguna QPU puede modificar, agregar campos obligatorios, ni remover esta raíz.**
+
+Cualquier mejora al formato se hace en `oper`. Las QPUs la siguen.
+
+## 2. Estructura vigente (versión estable)
 
 ```json
 {
   "project": {
-    "name": "operacionalizacion",
-    "specialty": "pediatria",
-    "date": "2026-06-06"
+    "name": "Nombre del proyecto",
+    "specialty": "Especialidad o área",
+    "date": "YYYY-MM-DD"
   },
   "variables": [
     {
-      "name": "sexo",
-      "type": "Nominal Dicotómica",
-      "description": "Sexo biológico del paciente",
+      "name": "edad",
+      "type": "Cuantitativa Discreta",
+      "description": "Edad cronológica en años cumplidos.",
       "metadata": {
-        "question": "¿Cuál es el sexo biológico?",
-        "unit": "",
-        "range": { "min": "", "max": "" },
-        "categories": [
-          { "label": "Masculino", "synonyms": ["m", "1"] },
-          { "label": "Femenino", "synonyms": ["f", "2"] }
-        ]
+        "question": "¿Qué edad tiene el paciente?",
+        "unit": "años",
+        "range": { "min": "0", "max": "115" },
+        "categories": []
       }
     }
   ]
 }
 ```
 
-## 2. Reglas de Mapeo de Variables a UI (QPU-01 & QPU-02)
+## 3. Tipos de variable reconocidos
 
-Al leer una variable del array, la QPU de captura de datos debe renderizar la interfaz según la siguiente lógica metodológica:
+| Valor en `type` | Mapeo de UI | Validación |
+|---|---|---|
+| `Nominal Dicotómica` | Radio buttons o toggle (2 opciones) | Exactamente una de las 2 categorías |
+| `Nominal Policotómica` | Radio buttons o select (N opciones) | Exactamente una de las N categorías |
+| `Ordinal` | Select jerárquico o radio con escala visual | Respeta el orden del array `categories` |
+| `Cuantitativa Continua` | `<input type="number" step="any">` | Dentro de `range.min`–`range.max` |
+| `Cuantitativa Discreta` | `<input type="number">` | Entero dentro de `range.min`–`range.max` |
 
-| Tipo en `.clinical` | Mapeo de UI Recomendado | Reglas de Validación |
-|---------------------|------------------------|---------------------|
-| **Nominal Dicotómica** | Grupo de botones excluyentes (Radio Buttons o Toggle). | Debe obligar a seleccionar una de las 2 categorías definidas. |
-| **Nominal Policotómica** | Lista de botones de opción o desplegable simple. | No permite entradas libres. Muestra las etiquetas (label). |
-| **Ordinal** | Lista jerárquica con escala visual o menús secuenciales. | Respeta el orden declarado en el array de categorías. |
-| **Cuantitativa Continua o Discreta** | Input numérico (`<input type="number">`). | Aplica de forma estricta los atributos min y max definidos en range. No permite guardar si está fuera de límites. |
+## 4. ⚠️ Trampa de tipos: `range.min` y `range.max` son strings
 
-## 3. Manejo de Sinónimos y Codificación
+El formato `.clinical` actual guarda `range.min` y `range.max` como **strings**, no como números. Esto es deliberado (permite `"N/A"`, vacíos, etc.) pero las QPUs deben parsear con cuidado.
 
-Durante la captura en QPU-02, aunque el usuario final ve y selecciona la etiqueta legible (label como "Masculino"), la aplicación debe almacenar internamente el primer elemento del array de sinónimos (synonyms como "1") para garantizar que la exportación sea compatible con scripts bioestadísticos directos en R.
+**Regla de parsing para QPUs:**
 
----
+```javascript
+// Pseudo-código (no incluir literalmente, es referencial)
+const minStr = variable.metadata.range?.min;
+const maxStr = variable.metadata.range?.max;
+const min = (minStr === "" || minStr == null) ? -Infinity : Number(minStr);
+const max = (maxStr === "" || maxStr == null) ? Infinity : Number(maxStr);
+if (Number.isNaN(min) || Number.isNaN(max)) {
+  // Reportar como dato inválido del .clinical, no crash
+}
+```
 
-## 4. ACCEPTANCE CRITERIA — Ecosistema QPU (La Experiencia de Usuario)
+**Convención:** si `min` está vacío → sin límite inferior. Si `max` está vacío → sin límite superior. **Si ambos están vacíos** → la variable cuantitativa no tiene rango (raro, pero posible).
 
-*Este archivo define los criterios de UX y accesibilidad. Al igual que con APU, queremos interfaces que médicos sin conocimientos técnicos puedan usar con teclado y lectores de pantalla en zonas rurales sin conexión.*
+## 5. Categorías
 
-### Criterios Funcionales Transversales
+```json
+{
+  "label": "Masculino",
+  "synonyms": ["m", "masc", "1"]
+}
+```
 
-**AC-01 — Robustez en el punto de captura (Offline-First)**
-- **Dado que** el personal médico está recopilando datos en un área sin cobertura telefónica,
-- **cuando** ingresa información en **QPU-02**,
-- **entonces** la app debe validar y almacenar localmente las respuestas en el navegador, permitiendo la descarga segura en formato JSON/CSV una vez finalizado el proceso.
+- `label`: el valor canónico que se muestra al usuario y se guarda por defecto.
+- `synonyms`: valores que pueden aparecer en datos "sucios" y deben normalizarse al `label` (esto lo aprovecha QPU-03 Data Cleaner).
 
-**AC-02 — Bloqueo defensivo de datos fuera de rango**
-- **Dado que** una variable cuantitativa (ej: `edad`) tiene un rango definido de `0` a `120`,
-- **cuando** el capturador intenta escribir `-5` o `125`,
-- **entonces** el formulario debe mostrar un feedback visual claro de error en tiempo real e impedir el envío del formulario.
+## 6. Codificación interna en QPUs
 
-**AC-03 — Portabilidad sin fricción**
-- **Dado que** se distribuyen los módulos QPU,
-- **cuando** el usuario descarga el archivo HTML de la utilidad,
-- **entonces** la aplicación debe funcionar con un simple doble clic local, sin necesidad de realizar instalaciones de dependencias.
+**Convención para las QPUs que almacenan datos:**
 
-### Criterios de Accesibilidad (Basados en APU)
+- Al **mostrar**: siempre el `label`.
+- Al **guardar/exportar**: el **primer elemento de `synonyms`**, o el `label` mismo si `synonyms` está vacío. Esto garantiza compatibilidad con scripts de R/Python que esperan códigos.
+- En el JSON de exportación, el campo se llama igual que `variable.name` (snake_case).
 
-- **AC-04 — Operación con teclado:** El diseño de formularios en QPU-01 y la entrada de datos en QPU-02 deben poder realizarse enteramente con navegación por teclado.
-- **AC-05 — Foco visible y claro:** Todos los controles interactivos y de opción múltiple deben tener indicadores de foco visibles y claros.
+## 7. Reglas de validación transversal
+
+Ninguna QPU puede:
+- ❌ Inventar categorías que no estén en `metadata.categories`
+- ❌ Aceptar valores fuera de `range` sin marcar como outliers
+- ❌ Asumir tipos que no estén en la tabla de §3
+- ❌ Saltarse `metadata.question` (es la fuente del label visible)
+
+## 8. Versionado del contrato
+
+El contrato lo define `oper`. QPU-00 sigue la versión publicada allá. Si una QPU necesita un campo nuevo:
+1. Se propone como cambio a `oper`.
+2. Se acepta en `oper`.
+3. Recién después, una QPU puede consumirlo.
+
+No hay versionado paralelo en QPU-00. Una sola fuente.
