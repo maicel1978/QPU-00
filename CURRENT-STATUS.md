@@ -55,6 +55,10 @@ Tests                : pendiente (definir stack de tests en QPU-01)
 - ✅ **Rango de `range.min/max`**: vienen como string, hay que parsear con cuidado. Documentado en `CLINICAL-CONTRACTS.md` §4.
 - ✅ **Carpeta por QPU**: cada QPU vive en `qpu-XX/`. Los docs viejos en `docs/` se migran cuando la QPU arranque.
 - ✅ **Gobernanza de docs**: mínimo. Sin ADRs, sin changelog global obligatorio por commit. CHANGELOG por QPU y CHANGELOG raíz solo para hitos.
+- ✅ **Restricciones de cambio del agente (R15)**: NO por LOC. Por: una intención, diff en una pantalla, máx archivos, test que falla antes y pasa después. Las 4 son obligatorias.
+- ✅ **Ventana de creatividad (R16)**: para exploración, el agente propone 2-3 enfoques sin código, vos elegís, y recién ahí arranca el Pre-Código. La creatividad se preserva sin perder rigor.
+- ✅ **Nudges de creatividad (R17)**: preferencias declaradas (no reglas), anti-complejidad y pro-simplicidad. El agente las sigue salvo justificación.
+- ✅ **Asunciones explícitas (R18)**: cada cambio declara sus asunciones. Las revisás antes de mergear.
 
 ## Decisiones pendientes
 

@@ -135,10 +135,101 @@ Antes de generar cualquier archivo de código, **siempre** mostrar el bloque `�
 ### R14 — Recordatorio vanilla en código
 Todo archivo `.js` debe empezar con el comentario estándar (definido en `AGENT-GUIDE.md` §6).
 
-### R15 — Límite de LOC por cambio del agente (regla QPU-00)
-**Regla nueva, específica del ecosistema QPU:** ningún cambio propuesto por un agente debe superar **~35 líneas** sin justificación y tests. Es la materialización del principio "degradación cero" en algo medible.
+### R15 — Tamaño y forma de los cambios del agente (regla QPU-00)
 
-Ver `AGENT-GUIDE.md` §3 para detalle.
+**Por qué esta regla existe:** los agentes de IA pueden generar diffs grandes rápido. Eso es un riesgo para la calidad y para la auditoría humana, no un beneficio. La restricción correcta no es por líneas de código (eso es arbitrario), sino por **revisabilidad y trazabilidad**.
+
+Un cambio del agente debe cumplir **las cuatro condiciones** siguientes. Si no las cumple, se parte en cambios más chicos.
+
+**R15.1 — Una sola intención por cambio**
+El commit resuelve una sola cosa, declarable en una frase. Si el mensaje del commit necesita "y", son dos cambios.
+
+```
+✅ "Validar range con string vacío en QPU-01"
+✅ "Agregar export CSV a QPU-01"
+❌ "Refactor de validaciones + cambiar tema + agregar export"
+```
+
+**R15.2 — Diff revisable en una pantalla**
+El diff completo debe entrar en una pantalla de editor (≈ 50 líneas visibles). Si no entra, se parte.
+
+**Excepciones legítimas** (documentar en el commit):
+- Archivos generados (ej: `examples/*.clinical` con muchas variables).
+- Tablas o assets estáticos donde el LOC no es señal de complejidad.
+- Migraciones de formato completas (de un esquema a otro).
+
+**R15.3 — Máximo de archivos tocados por cambio**
+- **Lógica (carpeta `core/`, `workers/`, `utils/`):** **1 archivo + sus tests**.
+- **UI (HTML/CSS/JS de UI):** hasta **2 archivos** (el acoplamiento visual lo justifica).
+- **Docs:** pueden tocar varios archivos (es su naturaleza).
+- **Prohibido:** un commit que toca lógica de `core/`, `workers/` y `ui/` a la vez. Son 3 commits.
+
+**R15.4 — Test que falla antes y pasa después**
+Cada cambio tiene un test que verifica el comportamiento:
+
+| Tipo de cambio | Test esperado |
+|---|---|
+| Lógica pura (funciones, parsers, validadores) | Test unitario automatizado |
+| Lógica con efectos (DOM, storage) | Test de integración o smoke test manual documentado |
+| UI sin lógica | Smoke test manual con pasos numerados |
+| Fix de bug | Test de regresión que reproduce el bug original |
+| Refactor (sin cambio de comportamiento) | Tests existentes deben seguir pasando + 1 test que verifique que el comportamiento no cambió |
+
+**Si no podés escribir el test, es una señal de que el cambio no está bien delimitado.** Volvé a R15.1.
+
+**Anti-pattern explícito:** el agente no puede argumentar "este cambio es chico, no necesita test". El test no se negocia, se escribe.
+
+### R16 — Ventana de creatividad (modo exploración)
+
+**Cuándo aplica:** cuando vos pedís algo abierto tipo *"explorá cómo harías X"*, *"proponé opciones"*, *"pensá alternativas"*, o cuando el problema no está bien definido.
+
+**Cómo funciona:**
+1. El agente responde con **2 a 3 enfoques diferentes**, sin Pre-Código ni código todavía.
+2. Cada enfoque se presenta como una propuesta breve (qué hace, qué tradeoff tiene, qué complejidad implica).
+3. Vos elegís uno (o decís "combiná 1 y 2", o "ninguno, repensá").
+4. Recién después de la elección, arranca el flujo normal: Pre-Código → código → tests → gate.
+
+**Por qué:** mata la rigidez del Pre-Código para exploración y preserva la creatividad del agente sin sacrificar el rigor. La restricción se aplica **después** de que haya claridad sobre qué hacer.
+
+### R17 — Nudges de creatividad (no restricciones, recomendaciones)
+
+En vez de restringir al agente en cosas que no rompen el sistema, lo **empujamos hacia lo bueno**. Son preferencias declaradas, no reglas inquebrantables:
+
+- Preferir **funciones puras** sobre estado mutable cuando es posible.
+- Preferir **composición** sobre herencia.
+- Preferir **datos explícitos** sobre implícitos (un objeto bien definido > un Map mágico).
+- Si el agente encuentra una forma **más simple** mientras trabaja, debe reportarla con el bloque `💡 MEJORA DETECTADA` antes de aplicarla.
+- Si una decisión depende de algo que el agente no sabe, **preguntá** en vez de asumir.
+- **Nudges anti-complejidad:**
+  - Si una función pasa de 30 líneas, probablemente hace 2 cosas. Partila.
+  - Si un archivo pasa de 200 líneas, probablemente tiene 2 responsabilidades. Partilo.
+  - Si una variable tiene 3 niveles de anidación, reconsiderá la estructura.
+- **Nudges pro-simplicidad:**
+  - Si podés resolver con HTML semántico nativo, no agregues JS.
+  - Si podés resolver con CSS vanilla, no agregues JS.
+  - Si podés resolver con 5 líneas, no escribas 20.
+
+**Cómo se distinguen de R1–R15:** las R1–R15 son **inquebrantables** (rompen el sistema). Las nudges de R17 son **preferencias** que el agente debe seguir salvo justificación explícita. Si las rompe, debe explicar por qué.
+
+### R18 — Protocolo de asunción explícita
+
+Cuando el agente **asume algo** (aunque sea obvio para él), debe declararlo explícitamente en una línea visible. Esto evita el clásico "el agente inventó 3 cosas que no le pediste y están mal".
+
+**Cuándo aplica:**
+- Antes del Pre-Código: ¿qué estás asumiendo del contexto que no está escrito?
+- Durante la implementación: si tomás una decisión no pedida, marcala.
+- Al final del cambio: ¿qué quedó asumido y conviene revisar?
+
+**Formato:**
+```
+📌 Asunciones de este cambio:
+   - El .clinical usa siempre minúsculas en `name`.
+   - El usuario tiene un navegador moderno (Chrome 100+).
+   - El localStorage está disponible.
+   - [etc.]
+```
+
+Si alguna de esas asunciones es falsa en el contexto real, vos la marcás y se corrige **antes** de mergear.
 
 ---
 
@@ -210,8 +301,11 @@ Cada test se documenta en `qpu-XX/ACCEPTANCE-CRITERIA.md` con un smoke test manu
 □ ¿Runtime sigue siendo vanilla? (R1)
 □ ¿Pre-código mostrado? (R13)
 □ ¿Comentario vanilla en archivos? (R14)
-□ ¿Smoke test reproducible incluido?
-□ ¿LOC del cambio ≤ 35? (R15)
+□ ¿Una sola intención? (R15.1)
+□ ¿Diff entra en una pantalla? (R15.2)
+□ ¿Archivos tocados dentro del máximo? (R15.3)
+□ ¿Test escrito que verifica el cambio? (R15.4)
+□ ¿Asunciones declaradas? (R18)
 ```
 
 **Tres perspectivas (R-PRISMA+):**

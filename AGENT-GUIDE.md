@@ -17,32 +17,49 @@ Si no recibís todo esto, pedilo. **No improvises contexto.**
 
 ## 2. Protocolo de Pre-Código (obligatorio)
 
-Antes de escribir o refactorizar cualquier archivo de código, el agente debe mostrar:
+Antes de escribir o refactorizar cualquier archivo de código, el agente debe mostrar este bloque. Si falta cualquiera de los campos, **no genera código**: pregunta qué falta.
 
 ```
 ┌─────────────────────────────────────────────┐
 │  📝 PRE-CÓDIGO                              │
 ├─────────────────────────────────────────────┤
-│  Archivo   : [path completo]                │
-│  Contratos : [de API-CONTRACTS.md]          │
-│  Reglas    : [R1, R4, R6... las que         │
-│              apliquen a este archivo]       │
-│  LOC objetivo: [≤ 35 líneas por cambio]     │
+│  Intención    : [una frase, ¿qué resuelve?] │
+│  Archivo      : [path completo]             │
+│  Otros archivos: [si aplica, máx 1-2]       │
+│  Contratos    : [de API-CONTRACTS.md]       │
+│  Reglas       : [R1, R4, R6... aplicables]  │
+│  Test         : [qué test verifica el cambio│
+│                 y cómo se ejecuta]          │
+│  Diff estimado: [¿entra en 1 pantalla? S/N] │
+│                                             │
+│  📌 Asunciones (R18):                       │
+│  - [supuesto 1 que no está en el contexto]  │
+│  - [supuesto 2]                             │
 │                                             │
 │  Generando código ahora...                  │
 └─────────────────────────────────────────────┘
 ```
 
-**Si no podés listar esto, no generes el código. Preguntá qué falta.**
+**Excepción — Ventana de Creatividad (R16):** si la petición es exploratoria ("proponé opciones", "explorá cómo harías X"), el agente **no** usa Pre-Código todavía. Primero presenta 2-3 enfoques sin código, vos elegís uno, y recién ahí arranca el flujo normal.
 
-## 3. Límite duro: ~35 LOC por cambio
+**Excepción — Nudges de creatividad (R17):** durante la implementación, si el agente encuentra una forma más simple, debe reportarla con el bloque `💡 MEJORA DETECTADA` antes de aplicarla (ver `METHODOLOGY.md` R17).
 
-Ninguna propuesta de código del agente debe superar las **~35 líneas de código modificadas o nuevas** sin:
-- Justificación explícita en el bloque Pre-Código
-- Al menos 1 test que valide el cambio
-- Actualización de los docs afectados
+**Si no podés llenar el bloque, no generes código.** Preguntá qué falta.
 
-Si el cambio requiere más, **se parte en commits chicos**, cada uno con su gate.
+## 3. Tamaño y forma del cambio (R15)
+
+Un cambio del agente debe cumplir **las cuatro condiciones de R15**:
+
+1. **Una sola intención** (declarable en una frase, sin "y").
+2. **Diff revisable en una pantalla** (≈ 50 líneas visibles).
+3. **Máximo de archivos tocados**: 1 archivo de lógica (+ tests), hasta 2 de UI, varios en docs.
+4. **Test que falla antes y pasa después** (unitario, integración o smoke test manual según el caso).
+
+Si no se cumplen las cuatro, **se parte en cambios más chicos**. Esta restricción no es negociable, pero no es por LOC: es por **revisabilidad**.
+
+**Anti-pattern:** el agente no puede argumentar "este cambio es chico, no necesita test". El test se escribe siempre.
+
+Ver `METHODOLOGY.md` R15 para el detalle completo y las excepciones legítimas.
 
 ## 4. Tests obligatorios
 
