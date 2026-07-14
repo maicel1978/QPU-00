@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>QPU-01 Form Generator - Crecimiento Pediátrico</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 8px; }
+        .error { color: red; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>Formulario de Crecimiento Pediátrico</h1>
+    <form id="clinicalForm">
+        <!-- Edad -->
+        <div class="form-group">
+            <label for="edad">Edad (años):</label>
+            <input type="number" id="edad" name="edad" min="0" max="18" required>
+            <div class="error" id="edadError"></div>
+        </div>
+
+        <!-- Sexo -->
+        <div class="form-group">
+            <label for="sexo">Sexo:</label>
+            <select id="sexo" name="sexo" required>
+                <option value="">Seleccione...</option>
+                <option value="m">Masculino</option>
+                <option value="f">Femenino</option>
+            </select>
+            <div class="error" id="sexoError"></div>
+        </div>
+
+        <!-- Altura -->
+        <div class="form-group">
+            <label for="altura">Altura (cm):</label>
+            <input type="number" id="altura" name="altura" min="50" max="180" required>
+            <div class="error" id="alturaError"></div>
+        </div>
+
+        <!-- Peso -->
+        <div class="form-group">
+            <label for="peso">Peso (kg):</label>
+            <input type="number" id="peso" name="peso" min="2" max="50" required>
+            <div class="error" id="pesoError"></div>
+        </div>
+
+        <!-- Categoría BMI -->
+        <div class="form-group">
+            <label for="categoria_bmi">Categoría BMI:</label>
+            <select id="categoria_bmi" name="categoria_bmi" required>
+                <option value="">Seleccione...</option>
+                <option value="bajo">Bajo peso</option>
+                <option value="normal">Peso normal</option>
+                <option value="sobre">Sobrepeso</option>
+                <option value="obesidad">Obesidad</option>
+            </select>
+            <div class="error" id="categoria_bmiError"></div>
+        </div>
+
+        <button type="submit">Guardar</button>
+    </form>
+
+    <script>
+        const form = document.getElementById('clinicalForm');
+        const errors = {
+            edad: document.getElementById('edadError'),
+            sexo: document.getElementById('sexoError'),
+            altura: document.getElementById('alturaError'),
+            peso: document.getElementById('pesoError'),
+            categoria_bmi: document.getElementById('categoria_bmiError')
+        };
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            let isValid = true;
+
+            // Validación de edad
+            const edad = parseInt(document.getElementById('edad').value);
+            if (isNaN(edad) || edad < 0 || edad > 18) {
+                errors.edad.textContent = 'Edad debe estar entre 0 y 18 años';
+                isValid = false;
+            } else {
+                errors.edad.textContent = '';
+            }
+
+            // Validación de sexo
+            const sexo = document.getElementById('sexo').value;
+            if (sexo === '') {
+                errors.sexo.textContent = 'Seleccione un sexo';
+                isValid = false;
+            } else {
+                errors.sexo.textContent = '';
+            }
+
+            // Validación de altura
+            const altura = parseInt(document.getElementById('altura').value);
+            if (isNaN(altura) || altura < 50 || altura > 180) {
+                errors.altura.textContent = 'Altura debe estar entre 50 y 180 cm';
+                isValid = false;
+            } else {
+                errors.altura.textContent = '';
+            }
+
+            // Validación de peso
+            const peso = parseInt(document.getElementById('peso').value);
+            if (isNaN(peso) || peso < 2 || peso > 50) {
+                errors.peso.textContent = 'Peso debe estar entre 2 y 50 kg';
+                isValid = false;
+            } else {
+                errors.peso.textContent = '';
+            }
+
+            // Validación de categoría BMI
+            const categoria_bmi = document.getElementById('categoria_bmi').value;
+            if (categoria_bmi === '') {
+                errors.categoria_bmi.textContent = 'Seleccione una categoría';
+                isValid = false;
+            } else {
+                errors.categoria_bmi.textContent = '';
+            }
+
+            if (isValid) {
+                // Aquí se guardaría los datos en JSON/CSV
+                alert('Formulario guardado correctamente');
+                // Implementar descarga de datos aquí
+            }
+        });
+    </script>
+</body>
+</html>
